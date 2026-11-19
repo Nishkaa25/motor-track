@@ -1,0 +1,65 @@
+{
+  "benchmark_execution_utc": "2026-10-19T06:47:16.029270+00:00",
+  "python_version": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+  "total_benchmarks": 8,
+  "passed_benchmarks": 8,
+  "overall_status": "PASS",
+  "benchmarks": [
+    {
+      "name": "DC Gravity Suppression (Highpass >0.5 Hz)",
+      "input": "9.81 m/s\u00b2 DC + 0.25 m/s\u00b2 5Hz sine, fs=50Hz, duration=5s",
+      "threshold": ">= 30.0 dB attenuation",
+      "measured": "60.3 dB (residual DC -0.00944 m/s\u00b2)",
+      "status": "PASS"
+    },
+    {
+      "name": "Bandpass 5.0 Hz Passband Gain",
+      "input": "0.50 m/s\u00b2 5.0 Hz sine, fs=50Hz",
+      "threshold": "-3.0 dB to +1.0 dB",
+      "measured": "0.00 dB",
+      "status": "PASS"
+    },
+    {
+      "name": "Bandpass 1.0 Hz Low-Frequency Rejection",
+      "input": "0.50 m/s\u00b2 1.0 Hz sine relative to 5.0 Hz passband",
+      "threshold": ">= 20.0 dB rejection",
+      "measured": "84.6 dB",
+      "status": "PASS"
+    },
+    {
+      "name": "Bandpass 15.0 Hz High-Frequency Rejection",
+      "input": "0.50 m/s\u00b2 15.0 Hz sine relative to 5.0 Hz passband",
+      "threshold": ">= 18.0 dB rejection",
+      "measured": "84.6 dB",
+      "status": "PASS"
+    },
+    {
+      "name": "3D Rotation Invariance (Summed 3D PSD, No Rectification Doubling)",
+      "input": "0.25 m/s\u00b2 5.0 Hz at 0\u00b0, 45\u00b0, 90\u00b0, and 3D diagonal orientations",
+      "threshold": "Identical ~5.0 Hz dominant freq (delta<=0.15Hz), RMS within 0.03 m/s\u00b2",
+      "measured": "Parallel to gravity (pure Z): freq=4.99Hz, rms=0.175; Perpendicular to gravity (pure X): freq=4.99Hz, rms=0.175; 45-deg oblique in X-Z: freq=4.99Hz, rms=0.175; Arbitrary 3D diagonal: freq=4.99Hz, rms=0.175",
+      "status": "PASS"
+    },
+    {
+      "name": "Dominant Frequency Estimation Accuracy (Parabolic Refinement)",
+      "input": "Synthetic tones: 4.0, 4.8, 5.0, 5.5, 6.0, 7.0 Hz, N=200, fs=50Hz",
+      "threshold": "Max estimation error <= 0.15 Hz",
+      "measured": "Max error 0.010 Hz across all tones",
+      "status": "PASS"
+    },
+    {
+      "name": "RMS Linearity Deviation (vs A / sqrt(2))",
+      "input": "Peak amplitudes 0.10 to 0.80 m/s\u00b2 at 5.0 Hz",
+      "threshold": "Max relative deviation <= 5.0%",
+      "measured": "Max deviation 0.02%",
+      "status": "PASS"
+    },
+    {
+      "name": "Multi-Rate Consistency (40 Hz, 50 Hz, 60 Hz)",
+      "input": "5.0 Hz pure tone sampled at 40 Hz, 50 Hz, and 60 Hz",
+      "threshold": "Dominant freq error <= 0.15 Hz without rate distortion",
+      "measured": "40Hz -> 5.0Hz (err 0.00Hz); 50Hz -> 4.99Hz (err 0.01Hz); 60Hz -> 4.99Hz (err 0.01Hz)",
+      "status": "PASS"
+    }
+  ]
+}

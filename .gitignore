@@ -1,0 +1,41 @@
+﻿# Python environments
+.venv/
+venv/
+**/.venv/
+**/venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Node dependencies and generated files
+node_modules/
+dist/
+build/
+coverage/
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+
+# Personal development notes and temporary output
+walkthrough.md
+scratch_master_prompt.txt
+raw_test_output.txt
+
+# Generated archives
+motortrack_verified_deliverable.zip
+
+# Course material
+StudentCopy_CNN/**/Week_14_Lab_Instructions.pdf

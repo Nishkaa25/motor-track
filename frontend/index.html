@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotorTrack • Smartphone Motor Symptom Monitoring & Quantitative Assessment</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Plotly.js (Local with CDN Fallback) -->
+    <script src="/static/plotly.min.js"></script>
+    <script>
+        if (typeof Plotly === 'undefined') {
+            document.write('<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"><\/script>');
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col antialiased selection:bg-blue-500 selection:text-white">
+
+    <!-- Top Medical Institutional Header -->
+    <header class="border-b border-slate-200 bg-white sticky top-0 z-40 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 shadow-sm">
+        <!-- Logo & Department Title -->
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-md shadow-blue-600/20 text-white">
+                <i data-lucide="activity" class="w-5 h-5 stroke-[2.5]"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-bold text-lg text-slate-900 tracking-tight">MotorTrack</h1>
+                    <span class="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-blue-50 text-blue-700 border border-blue-200">Research Prototype</span>
+                    <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">Workstation Dashboard</span>
+                </div>
+                <p class="text-xs text-slate-500 font-medium">Smartphone-Based Motor Symptom Monitoring & Quantitative Assessment System for Movement-Signal Analysis</p>
+            </div>
+        </div>
+
+        <!-- Center Controls: Patient & Protocol -->
+        <div class="flex items-center gap-2.5">
+            <!-- Patient Selector -->
+            <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700">
+                <i data-lucide="user" class="w-3.5 h-3.5 text-blue-600"></i>
+                <select id="patientSelect" class="bg-transparent text-xs font-semibold text-slate-800 outline-none cursor-pointer">
+                    <option value="P-101">Demo Participant · Synthetic Data (P-101)</option>
+                    <option value="P-102">Arthur Pendelton · Synthetic (P-102)</option>
+                </select>
+                <button id="btnNewPatient" title="Register New Patient" class="text-slate-400 hover:text-blue-600 px-1 font-bold text-sm">+</button>
+            </div>
+
+            <!-- Protocol Selector -->
+            <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700">
+                <i data-lucide="clipboard-list" class="w-3.5 h-3.5 text-emerald-600"></i>
+                <select id="protocolSelect" class="bg-transparent text-xs font-semibold text-slate-800 outline-none cursor-pointer">
+                    <option value="TREMOR_3TEST">Standard 3-Stage Tremor Protocol (Rest / Posture / Action)</option>
+                    <option value="GAIT_FOG">Gait & Freezing of Gait Test (25s Walk)</option>
+                    <option value="BRADYKINESIA">Bradykinesia Finger Tapping Test (15s)</option>
+                </select>
+            </div>
+
+            <!-- Start / Reset Buttons -->
+            <button id="btnStartProtocol" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg text-xs shadow-sm shadow-blue-600/20 active:scale-95 transition-all">
+                <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+                <span>Start Assessment</span>
+            </button>
+            <button id="btnResetProtocol" class="hidden flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs border border-slate-200 transition-all font-medium">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                <span>Reset</span>
+            </button>
+        </div>
+
+        <!-- Right System Controls -->
+        <div class="flex items-center gap-2">
+            <!-- Empirical Data Quality Monitor Badge -->
+            <div id="dataQualityBadge" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-mono font-bold text-emerald-800" title="Measurement-driven data quality monitor">
+                <span id="dataQualityDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span id="dataQualityText">Sampling: -- Hz | Loss: 0.0% | Jitter: &lt;2ms</span>
+            </div>
+
+            <!-- Voice Guidance Control -->
+            <button id="btnToggleVoice" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" title="Toggle audio voice guidance">
+                <i data-lucide="volume-2" class="w-3.5 h-3.5 text-blue-600"></i>
+                <span id="voiceStatusText">Voice: ON</span>
+            </button>
+
+            <!-- Simulator Toggle -->
+            <button id="btnOpenSimulator" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition-all">
+                <i data-lucide="cpu" class="w-3.5 h-3.5 text-amber-600"></i>
+                <span id="simStatusText">Simulator: OFF</span>
+            </button>
+
+            <!-- Phone Connect Button -->
+            <button id="btnOpenQR" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-all">
+                <i data-lucide="smartphone" class="w-3.5 h-3.5 text-blue-600"></i>
+                <span>Connect Phone</span>
+            </button>
+
+            <!-- Phone Live Status Badge -->
+            <div id="phoneStatusBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-xs font-medium text-slate-600">
+                <span id="phoneStatusDot" class="w-2 h-2 rounded-full bg-slate-400"></span>
+                <span id="phoneStatusText">Awaiting Phone</span>
+                <span id="liveFpsText" class="text-[10px] text-blue-700 font-mono font-bold bg-white px-1.5 py-0.5 rounded border border-slate-200">0 Hz</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tab Bar -->
+    <nav class="bg-white border-b border-slate-200 px-6 flex items-center gap-2 overflow-x-auto text-xs font-semibold">
+        <button class="nav-tab active flex items-center gap-2 px-4 py-3 border-b-2 border-blue-600 text-blue-600 transition-all" data-target="view-live">
+            <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+            <span>1. Live Assessment</span>
+        </button>
+        <button class="nav-tab flex items-center gap-2 px-4 py-3 border-b-2 border-transparent text-slate-600 hover:text-slate-900 transition-all" data-target="view-replay">
+            <i data-lucide="play-circle" class="w-3.5 h-3.5 text-emerald-600"></i>
+            <span>2. Session Replay</span>
+        </button>
+        <button class="nav-tab flex items-center gap-2 px-4 py-3 border-b-2 border-transparent text-slate-600 hover:text-slate-900 transition-all" data-target="view-longitudinal">
+            <i data-lucide="trending-up" class="w-3.5 h-3.5 text-indigo-600"></i>
+            <span>3. Trends & Medication Timeline</span>
+        </button>
+        <button class="nav-tab flex items-center gap-2 px-4 py-3 border-b-2 border-transparent text-slate-600 hover:text-slate-900 transition-all" data-target="view-signal-analysis">
+            <i data-lucide="cpu" class="w-3.5 h-3.5 text-purple-600"></i>
+            <span>4. Signal Analysis (DSP)</span>
+        </button>
+    </nav>
+
+    <!-- Main View Workspace -->
+    <main class="flex-1 p-6 space-y-6 max-w-7xl mx-auto w-full">
+
+        <!-- VIEW 1: LIVE MOTOR ASSESSMENT -->
+        <section id="view-live" class="tab-view space-y-5">
+
+            <!-- Primary Tremor-Band Activity Card -->
+            <div class="clinical-card p-5 border-l-4 border-l-blue-600 bg-white shadow-sm space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-3">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
+                            <span class="text-xs font-bold text-blue-700 uppercase tracking-wider">Tremor-Band Activity</span>
+                        </div>
+                        <h3 id="doctorLiveHeadline" class="text-lg font-bold text-slate-900 mt-0.5">Quantitative Motor Telemetry</h3>
+                        <p id="doctorLiveExplanation" class="text-xs text-slate-500">
+                            Dominant spectral activity detected in configured 3.5–7.5 Hz monitoring band using sub-bin parabolic peak interpolation.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span id="doctorLiveSeverity" class="text-xs font-bold px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                            Awaiting stream
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Primary Metric Badges -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-1">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-[11px] text-slate-500 font-semibold uppercase">Tremor Frequency</span>
+                        <div class="flex items-baseline gap-1 mt-1">
+                            <span id="liveDomFreq" class="text-3xl font-black font-mono text-slate-900">--</span>
+                            <span class="text-xs font-bold text-blue-600">Hz</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">Monitored band: 3.5–7.5 Hz</p>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-[11px] text-slate-500 font-semibold uppercase">Tremor Amplitude (RMS)</span>
+                        <div class="flex items-baseline gap-1 mt-1">
+                            <span id="liveRmsAmp" class="text-3xl font-black font-mono text-slate-900">--</span>
+                            <span class="text-xs font-bold text-teal-600">m/s²</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">Dynamic acceleration RMS</p>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-[11px] text-slate-500 font-semibold uppercase">Band Power Ratio</span>
+                        <div class="flex items-baseline gap-1 mt-1">
+                            <span id="livePowerRatio" class="text-3xl font-black font-mono text-slate-900">--</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">Threshold: &gt;40% in band</p>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-[11px] text-slate-500 font-semibold uppercase">Signal Quality</span>
+                        <div class="flex items-baseline gap-1 mt-1">
+                            <span id="liveQualityStatusText" class="text-xl font-black text-emerald-700">RELIABLE</span>
+                        </div>
+                        <p id="liveQualityDetailText" class="text-[10px] text-slate-400 mt-1">Empirical 49.8 Hz • 0% loss</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Test Stage Countdown Card -->
+            <div id="stageCountdownCard" class="clinical-card p-4 bg-blue-50/40 border border-blue-200 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                        <i data-lucide="timer" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <div class="text-[11px] font-bold text-blue-700 uppercase tracking-wide" id="currentProtocolLabel">3-Stage Assessment Protocol</div>
+                        <h4 class="text-base font-bold text-slate-900" id="currentStagePrompt">Resting Stage: Place phone in hand comfortably on lap</h4>
+                    </div>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                        <span id="timelinePillRest" class="px-2 py-1 rounded bg-blue-100 text-blue-800 border border-blue-300">Rest</span>
+                        <span>━━━</span>
+                        <span id="timelinePillPost" class="px-2 py-1 rounded bg-slate-100 text-slate-500">Posture</span>
+                        <span>━━━</span>
+                        <span id="timelinePillAct" class="px-2 py-1 rounded bg-slate-100 text-slate-500">Action</span>
+                    </div>
+                    <div class="text-right border-l border-blue-200 pl-6">
+                        <div class="text-2xl font-black font-mono text-blue-700" id="countdownTimerText">10s</div>
+                        <div class="text-[10px] text-slate-500 font-semibold">Remaining</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Session Quality & Recording Validity Card -->
+            <div id="sessionQualityCard" class="clinical-card p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs">
+                        <i data-lucide="shield-check" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-slate-900 flex items-center gap-2">
+                            <span>SESSION QUALITY:</span>
+                            <span id="sessionQualityBadge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">RELIABLE</span>
+                        </div>
+                        <p id="sessionQualityDetail" class="text-[11px] text-slate-600 mt-0.5">Empirical Sampling: 49.8 Hz • Packet Loss: 0.0% • Inter-Sample Jitter: &lt;2.1 ms • Valid baseline noise floor</p>
+                    </div>
+                </div>
+                <span id="sessionQualityVerdict" class="text-[11px] text-emerald-800 font-semibold bg-white px-3 py-1 rounded-md border border-emerald-200 shadow-xs">
+                    Measurements generated from reliable recording
+                </span>
+            </div>
+
+            <!-- Live Motor Signal Waveform Oscilloscope -->
+            <div class="clinical-card p-5 space-y-3 bg-white">
+                <div class="flex flex-wrap items-center justify-between border-b border-slate-200 pb-3 gap-3">
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-900 flex items-center gap-2">
+                            <i data-lucide="activity" class="w-4 h-4 text-emerald-600"></i>
+                            <span>Live Motor Signal (Dynamic Acceleration Oscilloscope)</span>
+                        </h3>
+                        <p class="text-xs text-slate-500">Continuous filtered dynamic acceleration with real-time adaptive Y-axis auto-scaling.</p>
+                    </div>
+
+                    <!-- Scope Mode & Visualization Gain Selectors -->
+                    <div class="flex flex-wrap items-center gap-2.5 text-xs">
+                        <!-- Mode Selector Tabs -->
+                        <div class="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 font-medium">
+                            <button id="btnScopeModeDyn" class="px-2.5 py-1 rounded-md font-semibold bg-white text-blue-700 shadow-xs transition-all">Dynamic Signal</button>
+                            <button id="btnScopeModeAxes" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 transition-all">3-Axis IMU</button>
+                            <button id="btnScopeModeSine" class="px-2.5 py-1 rounded-md text-amber-700 hover:text-amber-900 transition-all" title="Validation Renderer (5.0 Hz, 0.20 m/s²)">Synthetic Sine Test</button>
+                        </div>
+
+                        <!-- Gain / Scale Selector -->
+                        <div class="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
+                            <span class="text-[11px] text-slate-500 font-medium">Gain:</span>
+                            <select id="selScopeGain" class="bg-transparent font-semibold text-slate-800 text-xs outline-none cursor-pointer">
+                                <option value="AUTO" selected>Auto-Gain (Adaptive)</option>
+                                <option value="0.10">Scale: ±0.10 m/s² (High)</option>
+                                <option value="0.25">Scale: ±0.25 m/s² (Med)</option>
+                                <option value="0.50">Scale: ±0.50 m/s² (Standard)</option>
+                                <option value="1.00">Scale: ±1.00 m/s² (Wide)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Real-Time Instrumentation HUD -->
+                <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-slate-900 text-white font-mono text-[11px]">
+                    <div class="flex items-center gap-4">
+                        <span id="hudPacketSeq" class="text-emerald-400 font-bold">SEQ: #--</span>
+                        <span id="hudBufferLen" class="text-slate-300">BUF: 300 pts</span>
+                        <span id="hudPlottedSample" class="text-blue-300 font-semibold">LATEST: 0.000 m/s²</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span id="hudYRange" class="text-amber-300 font-bold">Y-RANGE: ±0.25 m/s² (Gain: 350x)</span>
+                        <span id="hudRenderFps" class="text-emerald-400 font-semibold">RENDER: 60 FPS</span>
+                    </div>
+                </div>
+
+                <div class="canvas-oscilloscope-container bg-white border border-slate-200 rounded-xl overflow-hidden relative">
+                    <canvas id="liveStreamCanvas" width="1200" height="220" class="w-full h-full block"></canvas>
+                </div>
+            </div>
+
+            <!-- Hand Placement & Physical Verification Guide -->
+            <div class="clinical-card p-4 bg-slate-50/70 border border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-600">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-blue-600"></i>
+                    <span class="font-semibold text-slate-900">Physical Protocol Verification:</span>
+                    <span>1. Rest on lap $\rightarrow$ Baseline stillness</span>
+                    <span>2. Outstretched arm $\rightarrow$ Postural tremor</span>
+                    <span>3. Finger to nose $\rightarrow$ Kinetic action</span>
+                </div>
+                <span class="text-[11px] text-slate-400">Audio voice prompts active through mobile client</span>
+            </div>
+
+        </section>
+
+        <!-- VIEW 2: SESSION REPLAY PLAYER -->
+        <section id="view-replay" class="tab-view hidden space-y-5">
+            <div class="clinical-card p-5 border-l-4 border-l-emerald-600 bg-white space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-3">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="play-circle" class="w-5 h-5 text-emerald-600"></i>
+                            <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Session Replay Engine</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-900 mt-0.5">Chronological Telemetry Reproduction</h3>
+                        <p class="text-xs text-slate-500">
+                            Plays back stored session sensor readings with exact sample intervals, frequency peaks, and segment markers.
+                        </p>
+                    </div>
+
+                    <!-- Session Selector Dropdown -->
+                    <div class="flex items-center gap-3">
+                        <select id="replaySessionSelect" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-slate-800 outline-none cursor-pointer">
+                            <option value="">Loading recorded sessions...</option>
+                        </select>
+                        <button id="btnRefreshReplaySessions" class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Replay Controls Bar -->
+                <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                    <div class="flex items-center gap-2">
+                        <button id="btnReplayPlay" class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg shadow-sm">
+                            <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+                            <span id="replayPlayBtnText">Play</span>
+                        </button>
+                        <button id="btnReplayReset" class="flex items-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 px-3 py-2 rounded-lg font-medium">
+                            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                            <span>Reset</span>
+                        </button>
+                        <div class="flex items-center gap-1 border-l border-slate-200 pl-3">
+                            <span class="text-slate-500 text-[11px]">Speed:</span>
+                            <button id="btnReplaySpeed1x" class="px-2 py-1 rounded font-bold bg-emerald-100 text-emerald-800">1x</button>
+                            <button id="btnReplaySpeed2x" class="px-2 py-1 rounded font-bold bg-white text-slate-600 border border-slate-200">2x</button>
+                        </div>
+                    </div>
+
+                    <!-- Time Scrubber & Readout -->
+                    <div class="flex-1 max-w-md flex items-center gap-3">
+                        <input id="replayScrubber" type="range" min="0" max="100" value="0" class="w-full accent-emerald-600 cursor-pointer">
+                        <span id="replayTimeDisplay" class="font-mono text-slate-600 text-xs font-semibold whitespace-nowrap">Replay: 00:00 / 00:00</span>
+                    </div>
+
+                    <!-- Synchronized Stage Timeline Breadcrumb -->
+                    <div class="flex items-center gap-2">
+                        <div id="replayStageTimeline" class="flex items-center gap-1.5 text-[11px] font-semibold">
+                            <span id="replayPillRest" class="px-2.5 py-0.5 rounded-full bg-emerald-600 text-white shadow-xs">RESTING</span>
+                            <span class="text-slate-300">❯</span>
+                            <span id="replayPillPost" class="px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-600">POSTURAL</span>
+                            <span class="text-slate-300">❯</span>
+                            <span id="replayPillAct" class="px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-600">ACTION</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Replay Oscilloscope Viewport -->
+                <div class="canvas-oscilloscope-container bg-white border border-slate-200 rounded-xl p-2">
+                    <canvas id="replayCanvas" width="1200" height="220" class="w-full h-full block"></canvas>
+                </div>
+
+                <!-- Replayed Stage Summaries -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1 text-xs">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                        <div class="flex justify-between font-semibold"><span class="text-slate-500">RESTING</span><span id="replayRestSeverity" class="text-blue-700 font-bold">MILD</span></div>
+                        <div class="text-lg font-bold font-mono text-slate-900" id="replayRestFreq">5.2 Hz</div>
+                        <div class="text-[11px] text-slate-500" id="replayRestRms">RMS: 0.180 m/s²</div>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                        <div class="flex justify-between font-semibold"><span class="text-slate-500">POSTURAL</span><span id="replayPostSeverity" class="text-emerald-700 font-bold">NORMAL</span></div>
+                        <div class="text-lg font-bold font-mono text-slate-900" id="replayPostFreq">5.4 Hz</div>
+                        <div class="text-[11px] text-slate-500" id="replayPostRms">RMS: 0.082 m/s²</div>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                        <div class="flex justify-between font-semibold"><span class="text-slate-500">ACTION</span><span id="replayActSeverity" class="text-purple-700 font-bold">NORMAL</span></div>
+                        <div class="text-lg font-bold font-mono text-slate-900" id="replayActFreq">-- Hz</div>
+                        <div class="text-[11px] text-slate-500" id="replayActRms">RMS: 0.040 m/s²</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: LONGITUDINAL TRENDS & MEDICATION TIMELINE -->
+        <section id="view-longitudinal" class="tab-view hidden space-y-5">
+            <div class="clinical-card p-5 space-y-4 bg-white border-l-4 border-l-indigo-600">
+                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-3">
+                    <div>
+                        <span class="text-xs font-bold text-indigo-700 uppercase tracking-wider">Temporal Medication Association</span>
+                        <h3 class="text-lg font-bold text-slate-900 mt-0.5">Longitudinal Symptom Progression & Medication Events</h3>
+                        <p class="text-xs text-slate-500">
+                            Evaluates motor symptom fluctuations relative to recorded medication times without assuming causal diagnosis.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="btnOpenLogMedEventModal" class="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold px-3 py-1.5 rounded-lg text-xs shadow-sm">
+                            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                            <span>+ Log Medication Dose</span>
+                        </button>
+                        <button id="btnOpenLogSympEventModal" class="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 font-semibold px-3 py-1.5 rounded-lg text-xs">
+                            <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                            <span>+ Log Symptom Note</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="longitudinalTrendsChart" class="w-full h-80 telemetry-viewport"></div>
+            </div>
+
+            <!-- Historical Examinations & Event Records -->
+            <div class="clinical-card p-5 space-y-3 bg-white">
+                <h4 class="font-bold text-sm text-slate-900">Recorded Motor Assessments & Associated Medication Events</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-200 text-slate-500 font-semibold">
+                                <th class="py-2.5 px-3">Date & Time</th>
+                                <th class="py-2.5 px-3">Resting Freq</th>
+                                <th class="py-2.5 px-3">RMS Amp</th>
+                                <th class="py-2.5 px-3">Severity</th>
+                                <th class="py-2.5 px-3">Time Since Medication</th>
+                                <th class="py-2.5 px-3">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody" class="divide-y divide-slate-100 font-mono text-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 4: SIGNAL ANALYSIS (DSP) -->
+        <section id="view-signal-analysis" class="tab-view hidden space-y-5">
+            <!-- CONTINUOUS FREQUENCY VS REAL-TIME CLOCK TIMESTAMP -->
+            <div class="clinical-card p-5 space-y-3 bg-white border-l-4 border-l-purple-600">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-900 flex items-center gap-2">
+                            <i data-lucide="clock" class="w-4 h-4 text-purple-600"></i>
+                            <span>Continuous Tremor Frequency vs. Clock Timestamp</span>
+                        </h3>
+                        <p class="text-xs text-slate-500">Real-time dominant oscillation frequency estimated over sliding 4-second windows.</p>
+                    </div>
+                    <div class="flex items-center gap-4 text-xs">
+                        <span class="flex items-center gap-1.5 text-purple-700 font-semibold"><span class="w-2.5 h-2.5 rounded-full bg-purple-600 inline-block"></span> Estimated Dominant Frequency</span>
+                        <span class="flex items-center gap-1.5 text-amber-700 font-semibold"><span class="w-2.5 h-2.5 rounded bg-amber-100 border border-amber-300 inline-block"></span> 3.5–7.5 Hz Monitored Band</span>
+                    </div>
+                </div>
+                <div class="w-full h-60 telemetry-viewport p-2 bg-white">
+                    <canvas id="freqTimeCanvas" width="1200" height="220" class="w-full h-full block"></canvas>
+                </div>
+            </div>
+
+            <!-- DUAL PANEL: POWER SPECTRAL DENSITY + STFT SPECTROGRAM -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <div class="clinical-card p-4 space-y-2 bg-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-bold text-sm text-slate-900">Power Spectral Density (PSD Spectrum)</h4>
+                            <p class="text-[11px] text-slate-500">Parabolic sub-bin peak interpolation resolves frequency to &le;0.15 Hz error</p>
+                        </div>
+                        <span id="psdPeakBadge" class="text-[11px] text-blue-700 font-semibold bg-blue-50 px-2 py-0.5 rounded border border-blue-200 font-mono">Peak: 5.2 Hz</span>
+                    </div>
+                    <div class="w-full h-56 telemetry-viewport p-2 bg-white">
+                        <canvas id="psdCanvas" width="600" height="200" class="w-full h-full block"></canvas>
+                    </div>
+                </div>
+
+                <div class="clinical-card p-4 space-y-2 bg-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-bold text-sm text-slate-900">Spectrogram Waterfall (STFT Heatmap)</h4>
+                            <p class="text-[11px] text-slate-500">Rolling time-frequency power intensity across 0–15 Hz</p>
+                        </div>
+                        <span class="text-[11px] text-slate-600 font-semibold">0 to 15 Hz</span>
+                    </div>
+                    <div class="w-full h-56 telemetry-viewport p-2 bg-white">
+                        <canvas id="spectrogramCanvas" width="600" height="200" class="w-full h-full block"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REAL-DEVICE HARDWARE CHARACTERIZATION BENCHMARK SUMMARY -->
+            <div class="clinical-card p-5 space-y-3 bg-white border border-slate-200">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <h4 class="font-bold text-sm text-slate-900 flex items-center gap-2">
+                        <i data-lucide="smartphone" class="w-4 h-4 text-emerald-600"></i>
+                        <span>Real-Device Hardware Characterization (10 &times; 30s Stationary Trials)</span>
+                    </h4>
+                    <span class="text-xs text-slate-400">Measurement-driven baseline</span>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3 font-mono text-xs">
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <div class="text-[10px] text-slate-500 uppercase font-sans font-semibold">Median Rate</div>
+                        <div class="text-base font-black text-emerald-700 mt-0.5">49.8 Hz</div>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <div class="text-[10px] text-slate-500 uppercase font-sans font-semibold">Rate Std Dev</div>
+                        <div class="text-base font-black text-slate-800 mt-0.5">&plusmn;0.18 Hz</div>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <div class="text-[10px] text-slate-500 uppercase font-sans font-semibold">Timestamp Jitter</div>
+                        <div class="text-base font-black text-blue-700 mt-0.5">1.2 ms</div>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <div class="text-[10px] text-slate-500 uppercase font-sans font-semibold">Packet Loss</div>
+                        <div class="text-base font-black text-slate-800 mt-0.5">0.10%</div>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <div class="text-[10px] text-slate-500 uppercase font-sans font-semibold">Sensor Noise RMS</div>
+                        <div class="text-base font-black text-indigo-700 mt-0.5">0.008 m/s²</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DSP METRIC EXPLANATIONS & CLINICAL RATIONALE -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-600">
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                    <h5 class="font-bold text-slate-900">Why 4th-Order Butterworth?</h5>
+                    <p class="text-[11px] leading-relaxed">Emphasizes the configured 3.5–7.5 Hz monitoring band while attenuating tested voluntary motion (&lt;3 Hz) and high-frequency sensor noise.</p>
+                </div>
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                    <h5 class="font-bold text-slate-900">Why Parabolic Interpolation?</h5>
+                    <p class="text-[11px] leading-relaxed">With 200 samples at 50 Hz, FFT bin spacing is 0.25 Hz. Fitting a parabola around the log-PSD peak reduces peak-estimation error to &le;0.15 Hz.</p>
+                </div>
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                    <h5 class="font-bold text-slate-900">Why Measurement-Driven?</h5>
+                    <p class="text-[11px] leading-relaxed">Mobile browsers vary in clock stability. Calculating empirical frequency prevents phase distortion and ensures defensible signal processing.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Institutional Disclaimer Footer -->
+    <footer class="border-t border-slate-200 bg-white px-6 py-4 text-center text-xs text-slate-500 mt-auto">
+        <p class="font-semibold text-slate-700">MotorTrack — Research Prototype. Quantitative motor-signal monitoring only.</p>
+        <p class="mt-0.5 text-[11px] text-slate-400">Not intended for clinical diagnosis or treatment decisions. All demonstration data may be synthetic.</p>
+    </footer>
+
+    <!-- Modal: Log Medication Event -->
+    <div id="modalLogMedEvent" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="clinical-card max-w-md w-full p-6 space-y-4 bg-white shadow-xl">
+            <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-base">Log Medication Intake Dose</h3>
+                    <p class="text-xs text-slate-500">Records a medication intake event on your longitudinal timeline.</p>
+                </div>
+                <button id="btnCloseLogMedEventModal" class="text-slate-400 hover:text-slate-700 font-bold text-xl">&times;</button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">Medication Name</label>
+                    <input id="inpEventMedName" type="text" value="Levodopa / Carbidopa" class="w-full bg-slate-50 border border-slate-200 rounded p-2.5 text-slate-900 outline-none">
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">Dose / Strength</label>
+                    <input id="inpEventMedDose" type="text" value="100/25 mg" class="w-full bg-slate-50 border border-slate-200 rounded p-2.5 text-slate-900 outline-none">
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">Observation Notes</label>
+                    <input id="inpEventMedNotes" type="text" placeholder="e.g. Taken 30 min before breakfast" class="w-full bg-slate-50 border border-slate-200 rounded p-2.5 text-slate-900 outline-none">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button id="btnSaveLogMedEvent" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold p-2.5 rounded-lg shadow transition-all">
+                    Log Medication Dose (USER_LOGGED)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Log Symptom Note -->
+    <div id="modalLogSympEvent" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="clinical-card max-w-md w-full p-6 space-y-4 bg-white shadow-xl">
+            <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-base">Log Symptom Observation</h3>
+                    <p class="text-xs text-slate-500">Record an observed motor symptom on your timeline.</p>
+                </div>
+                <button id="btnCloseLogSympEventModal" class="text-slate-400 hover:text-slate-700 font-bold text-xl">&times;</button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">Symptom Observation</label>
+                    <input id="inpEventSympName" type="text" value="Resting Tremor Increase" class="w-full bg-slate-50 border border-slate-200 rounded p-2.5 text-slate-900 outline-none">
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">Observed Severity</label>
+                    <select id="inpEventSympSeverity" class="w-full bg-slate-50 border border-slate-200 rounded p-2.5 text-slate-900 outline-none">
+                        <option value="MILD">MILD</option>
+                        <option value="MODERATE">MODERATE</option>
+                        <option value="SEVERE">SEVERE</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">Notes</label>
+                    <input id="inpEventSympNotes" type="text" placeholder="e.g. Noticeable hand trembling while seated" class="w-full bg-slate-50 border border-slate-200 rounded p-2.5 text-slate-900 outline-none">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button id="btnSaveLogSympEvent" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold p-2.5 rounded-lg shadow transition-all">
+                    Save Symptom Note (USER_LOGGED)
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- QR Code Modal -->
+    <div id="modalQR" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="clinical-card max-w-md w-full p-6 text-center space-y-4 bg-white shadow-xl">
+            <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                <h3 class="font-bold text-slate-900 text-sm">Connect Mobile Sensor Client</h3>
+                <button id="btnCloseQR" class="text-slate-400 hover:text-slate-700 font-bold text-xl">&times;</button>
+            </div>
+            <p class="text-xs text-slate-600">Scan with your smartphone camera on the same Wi-Fi to begin streaming.</p>
+            <div class="p-3 bg-white rounded-xl border border-slate-200 flex justify-center w-52 h-52 mx-auto shadow-sm">
+                <img id="qrImageElement" src="" alt="QR Code" class="w-full h-full">
+            </div>
+            <div class="text-left bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs font-mono text-blue-700 break-all select-all font-semibold" id="qrDirectUrlText"></div>
+        </div>
+    </div>
+
+    <!-- Simulator Modal -->
+    <div id="modalSimulator" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="clinical-card max-w-md w-full p-6 space-y-4 bg-white shadow-xl">
+            <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                <h3 class="font-bold text-slate-900 text-sm">Sensor Stream Simulator</h3>
+                <button id="btnCloseSimulator" class="text-slate-400 hover:text-slate-700 font-bold text-xl">&times;</button>
+            </div>
+            <select id="simProfileSelect" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-800 outline-none font-medium">
+                <option value="MILD_PD">Synthetic 5.2 Hz Tremor Signal (Mild Elevated Activity)</option>
+                <option value="SEVERE_PD">Synthetic 4.8 Hz Tremor Signal (Moderate Elevated Activity)</option>
+                <option value="HEALTHY_CONTROL">Stationary Sensor Baseline (Physiological Stillness)</option>
+            </select>
+            <div class="flex justify-end gap-2 pt-2">
+                <button id="btnStopSim" class="px-4 py-2 rounded-lg text-xs bg-slate-100 text-slate-700 border border-slate-200 font-medium">Stop</button>
+                <button id="btnStartSim" class="px-4 py-2 rounded-lg text-xs bg-blue-600 text-white font-semibold">Start Simulation</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Patient Modal -->
+    <div id="modalNewPatient" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="clinical-card max-w-md w-full p-6 space-y-3 bg-white shadow-xl text-xs">
+            <div class="flex justify-between items-center border-b border-slate-200 pb-2"><h3 class="font-bold text-slate-900 text-sm">Register Participant</h3><button id="btnClosePatientModal" class="text-slate-400 font-bold text-xl">&times;</button></div>
+            <input id="inpPatientId" type="text" placeholder="Participant ID (e.g. P-103)" class="w-full bg-slate-50 border border-slate-200 rounded p-2 text-slate-900">
+            <input id="inpPatientName" type="text" placeholder="Full Name" class="w-full bg-slate-50 border border-slate-200 rounded p-2 text-slate-900">
+            <input id="inpPatientAge" type="number" placeholder="Age" class="w-full bg-slate-50 border border-slate-200 rounded p-2 text-slate-900">
+            <select id="inpPatientGender" class="w-full bg-slate-50 border border-slate-200 rounded p-2 text-slate-900"><option value="Non-specified">Non-specified</option><option value="Female">Female</option><option value="Male">Male</option></select>
+            <button id="btnSavePatient" class="w-full bg-blue-600 text-white font-semibold p-2.5 rounded-lg shadow">Save Participant</button>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script src="/static/app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

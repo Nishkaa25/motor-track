@@ -1,0 +1,4 @@
+[MIGRATION] Backup created: C:\parkinson-engine\data\parkinson_engine_migration_backup_1792392500.db
+[MIGRATION] PRAGMA integrity_check: [('ok',)]
+[MIGRATION] PRAGMA foreign_key_check: []
+[MIGRATION] Migration and repair complete!
