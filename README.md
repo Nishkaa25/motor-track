@@ -17,17 +17,17 @@ Parkinson's disease symptom evaluations (such as the Movement Disorder Society -
 
 ---
 
-## 🎬 The Core Demonstration Flow
+##  The Core Demonstration Flow
 
 The end-to-end user and clinician experience follows a continuous feedback loop:
 
 ```mermaid
 flowchart LR
-    A["📱 Phone IMU Stream"] --> B["⚡ Real-Time WebSocket"]
-    B --> C["📊 Live Oscilloscope & Tremor Metrics"]
-    C --> D["💾 Database Persistence"]
-    D --> E["📈 Longitudinal Trends & Med Overlay"]
-    E --> F["🔄 Full Session Replay Engine"]
+    A["Phone IMU Stream"] --> B["Real-Time WebSocket"]
+    B --> C["Live Oscilloscope & Tremor Metrics"]
+    C --> D["Database Persistence"]
+    D --> E["Longitudinal Trends & Med Overlay"]
+    E --> F["Full Session Replay Engine"]
 ```
 
 1. **Patient Pairs Device**: Open dashboard, display QR code, and scan from any smartphone on the local network using a secure, short-lived pairing token. No app store installation required.
@@ -39,7 +39,7 @@ flowchart LR
 
 ---
 
-## 🏗️ System Architecture
+##  System Architecture
 
 ```
                       +------------------------------------------+
@@ -48,7 +48,8 @@ flowchart LR
                       |  Monotonic Sequence + Performance Clocks |
                       +--------------------+---------------------+
                                            |
-                      WebSocket (JSON | Sensor stream: ~50 Hz observed | Visualization: up to 60 FPS)
+                      WebSocket (JSON | Sensor stream: ~50 Hz observed
+                           | Visualization: up to 60 FPS) 
                                            |
                       +--------------------v---------------------+
                       |           FASTAPI INGESTION              |
@@ -75,7 +76,7 @@ flowchart LR
 
 ---
 
-## 🔬 Signal Processing & Movement Analysis
+## Signal Processing & Movement Analysis
 
 This is where much of MotorTrack's actual engineering work happens.
 
@@ -122,7 +123,7 @@ These modules allow the same sensor-processing framework to be explored across d
 
 ---
 
-## 🧪 Testing & Benchmarking
+## Testing & Benchmarking
 
 MotorTrack includes an automated verification suite covering signal processing, API behaviour, database operations, WebSocket communication and protocol transitions.
 
@@ -147,7 +148,7 @@ See `benchmark_results.json` and `scripts/run_benchmarks.py` for the recorded re
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Layer | Technologies |
 |---|---|
@@ -163,7 +164,7 @@ See `benchmark_results.json` and `scripts/run_benchmarks.py` for the recorded re
 ---
 ---
 
-## 🚀 Quickstart Guide
+## Quickstart Guide
 
 ### Prerequisites
 - Python 3.12 (configured in `.venv`)
@@ -197,7 +198,4 @@ Open a browser and navigate to `http://localhost:8000`.
 - **Smartphone**: Click **"Connect Phone"** on the dashboard header, scan the QR code, tap **"Activate Sensors"**, and hold the device.
 - **Simulator**: Click **"Simulator: OFF"** on the header, select a profile (e.g. *Synthetic 5.2 Hz Tremor Signal*), and click **"Start Simulation"**.
 
----
 
-## ⚖️ Ethical & Research Scope Notice
-MotorTrack is developed strictly for movement-signal analysis, biomedical engineering research, and quantitative telemetry. Sensor captures and synthetic profiles are intended for algorithmic benchmarking and longitudinal observation. It does not provide medical diagnosis, therapeutic recommendations, or MDS-UPDRS clinical severity certification.
