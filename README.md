@@ -75,28 +75,50 @@ flowchart LR
 
 ---
 
-## 🔬 Signal Processing Pipeline & Numerical Integrity
+## 🔬 Signal Processing & Movement Analysis
 
-### 1. Per-Axis 3D Filtering & Orientation Invariance
-To prevent frequency-doubling magnitude rectification artifacts, MotorTrack filters each Cartesian axis independently:
-$$a_{x,\text{dyn}}(t) = \text{HighPass}(a_x(t)), \quad a_{y,\text{dyn}}(t) = \text{HighPass}(a_y(t)), \quad a_{z,\text{dyn}}(t) = \text{HighPass}(a_z(t))$$
-Dynamic acceleration is isolated via a 2nd-order high-pass Butterworth filter ($f_c = 0.5\text{ Hz}$) with adaptive padlen clamping ($3 \times 2 \times n_{\text{sections}}$), suppressing the DC gravity component by $>60\text{ dB}$.
+This is where much of MotorTrack's actual engineering work happens.
 
-Tremor components are isolated per axis via a 4th-order Butterworth bandpass filter:
-$$3.5\text{ Hz} \le f \le 7.5\text{ Hz}$$
-Spectral power is synthesized using the summed 3D PSD across axes:
-$$\text{PSD}_{\text{total}}(f) = \text{PSD}_{x}(f) + \text{PSD}_{y}(f) + \text{PSD}_{z}(f)$$
-This guarantees mathematical 3D rotation invariance without frequency doubling to 10 Hz when rotating relative to gravity.
+Rather than simply plotting incoming sensor values, the backend processes movement signals to extract useful frequency- and time-domain measurements.
 
-### 2. Resultant Band-Limited RMS
-Resultant tremor amplitude is computed directly from bandpassed orthogonal axes:
-$$\text{RMS}_{\text{resultant}} = \sqrt{\frac{1}{N} \sum_{i=1}^N (a_{x,\text{bp}}[i]^2 + a_{y,\text{bp}}[i]^2 + a_{z,\text{bp}}[i]^2)}$$
-For a single pure sinusoid with amplitude $A$, theoretical RMS is $A / \sqrt{2}$. MotorTrack validates linearity within $<0.1\%$ across tested amplitudes ($0.10\text{–}0.80\text{ m/s}^2$).
+### 1. Signal Filtering
 
-### 3. Sub-Bin Parabolic Peak Interpolation
-With a 4-second analysis window ($N = 200$ samples at $f_s = 50\text{ Hz}$), fundamental discrete FFT bin resolution is $\Delta f = \frac{f_s}{N} = 0.25\text{ Hz}$. MotorTrack applies parabolic interpolation over the log-magnitude spectrum around peak bin $k$:
-$$\delta = \frac{1}{2} \frac{\ln |X(k-1)| - \ln |X(k+1)|}{\ln |X(k-1)| - 2\ln |X(k)| + \ln |X(k+1)|}, \quad f_{\text{est}} = (k + \delta) \cdot \Delta f$$
-Across evaluated synthetic tones ($4.0\text{–}7.0\text{ Hz}$), this reduces dominant-frequency estimation error to $\le 0.15\text{ Hz}$ (measured maximum error: **$0.010\text{ Hz}$**).
+The processing pipeline uses Butterworth filters to isolate movement components.
+
+- High-pass filtering with a 0.5 Hz cutoff to reduce gravity-related components.
+- A 3.5–7.5 Hz bandpass filter to examine the configured tremor-frequency range.
+- Independent processing of the X, Y and Z acceleration axes.
+
+### 2. Frequency-Domain Analysis
+
+MotorTrack uses Fast Fourier Transform (FFT) and Welch's Power Spectral Density (PSD) estimation to examine the frequency distribution of movement signals.
+
+Parabolic peak interpolation is also used to improve dominant-frequency estimates beyond the resolution of individual FFT bins.
+
+### 3. Movement Features
+
+The system calculates measurements including:
+
+- Root Mean Square (RMS) amplitude.
+- Dominant tremor frequency.
+- Frequency-band power.
+- Three-axis signal features.
+- Sampling consistency and timestamp jitter.
+
+The three-axis PSD approach is designed to provide rotation-robust tremor measurements, avoiding frequency-doubling artefacts observed when analysing only the magnitude of raw acceleration.
+
+### 4. Additional Motor Assessment Modules
+
+Beyond tremor analysis, the project includes experimental modules for:
+
+| Module | Analysis |
+|---|---|
+| Gait analysis | Step cadence and movement regularity |
+| Freezing of Gait (FOG) | Frequency-band power ratios and episode tracking |
+| Finger tapping | Tap intervals, variability and changes in tapping speed |
+| Movement characterization | Signal features and movement-pattern analysis |
+
+These modules allow the same sensor-processing framework to be explored across different types of motor assessments.
 
 ---
 
