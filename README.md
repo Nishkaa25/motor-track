@@ -122,43 +122,45 @@ These modules allow the same sensor-processing framework to be explored across d
 
 ---
 
-## 🧪 Automated Verification & Acceptance Criteria
+## 🧪 Testing & Benchmarking
 
-The system includes a **44-test automated verification suite across 11 test modules** (100% pass in 2.88s) and a standalone quantitative benchmark runner (`scripts/run_benchmarks.py`).
+MotorTrack includes an automated verification suite covering signal processing, API behaviour, database operations, WebSocket communication and protocol transitions.
 
-| Benchmark Domain | Acceptance Criterion | Test Configuration | Measured Result | Status |
-|---|---|---|---|---|
-| **DC Gravity Suppression** | Highpass attenuation $\ge 30.0\text{ dB}$ | $9.81\text{ m/s}^2\text{ DC} + 0.25\text{ m/s}^2\text{ 5Hz sine}$, $f_s=50\text{Hz}$ | **$60.3\text{ dB}$ attenuation** (residual DC $-0.0094\text{ m/s}^2$) | PASS |
-| **Bandpass Passband Gain** | $5.0\text{ Hz}$ gain within $-3.0\text{ dB}$ to $+1.0\text{ dB}$ | $0.50\text{ m/s}^2\text{ 5.0 Hz sine}$, $f_s=50\text{Hz}$ | **$0.00\text{ dB}$** | PASS |
-| **Bandpass Low Selectivity** | $1.0\text{ Hz}$ rejection $\ge 20.0\text{ dB}$ | $0.50\text{ m/s}^2\text{ 1.0 Hz sine}$ relative to $5.0\text{ Hz}$ passband | **$84.6\text{ dB}$ rejection** | PASS |
-| **Bandpass High Selectivity** | $15.0\text{ Hz}$ rejection $\ge 18.0\text{ dB}$ | $0.50\text{ m/s}^2\text{ 15.0 Hz sine}$ relative to $5.0\text{ Hz}$ passband | **$84.6\text{ dB}$ rejection** | PASS |
-| **3D Rotation Invariance** | Dominant freq $\pm 0.15\text{ Hz}$, RMS $\pm 0.03\text{ m/s}^2$ | $0.25\text{ m/s}^2\text{ 5.0 Hz sine}$ at 0°, 45°, 90°, 3D diagonal | **Identical $5.00\text{ Hz}$ & $0.177\text{ m/s}^2$ (no doubling)** | PASS |
-| **Dominant Freq Estimation** | Estimation error $\le 0.15\text{ Hz}$ | $4.0, 4.8, 5.0, 5.5, 6.0, 7.0\text{ Hz}$ tones, $f_s=50\text{Hz}$ | **Max error $0.010\text{ Hz}$** across all tested tones | PASS |
-| **RMS Linearity Deviation** | Relative error $\le 5.0\%$ of $A / \sqrt{2}$ | Peak amplitudes $0.10$ to $0.80\text{ m/s}^2$ at $5.0\text{ Hz}$ | **Max deviation $0.02\%$** from theoretical RMS | PASS |
-| **Multi-Rate Consistency** | Dominant freq error $\le 0.15\text{ Hz}$ | $5.0\text{ Hz}$ oscillation sampled at $40\text{ Hz}$, $50\text{ Hz}$, and $60\text{ Hz}$ | **$40\text{Hz} \rightarrow 5.0\text{Hz}$; $50\text{Hz} \rightarrow 5.0\text{Hz}$; $60\text{Hz} \rightarrow 5.0\text{Hz}$** | PASS |
-| **Exact Packet Loss** | Exact $20.0\%$ loss calculated | 20 received packets, 5 missing sequence packets | **$20.0\%$ exact loss reported** | PASS |
-| **Multi-Window FOG Tracking** | Chronological sliding window episode logging | Multi-window walking vs freezing transitions | **2 distinct episodes tracked, closed at boundary** | PASS |
-| **Database Integrity & FKs** | Enforce PRAGMA foreign_keys = ON & zero orphans | `PRAGMA integrity_check = ok`, `foreign_key_check = []` | **0 orphan records, constraints enforced** | PASS |
-| **Physical Phone Metrics** | Target phone browser jitter $<2.1\text{ ms}$, loss $<0.1\%$ | Real target phone hardware (Pixel 7 / Samsung S23) | **BLOCKED (PHYSICAL HARDWARE REQUIRED)** | BLOCKED |
+The repository currently documents 44 automated tests across 11 test modules, alongside a separate numerical benchmark runner.
+
+Some of the benchmark results using controlled synthetic signals:
+
+| Benchmark | Result |
+|---|---|
+| Gravity suppression | 60.3 dB attenuation |
+| Dominant-frequency estimation | Maximum error of 0.010 Hz across tested tones |
+| RMS linearity | Maximum deviation of 0.02% from theoretical values |
+| 3D rotation invariance | Consistent 5 Hz dominant frequency across tested orientations |
+| Multi-rate sampling | Consistent frequency estimation at 40, 50 and 60 Hz |
+| Packet-loss calculation | Exact 20% loss detected in the test case |
+
+The project also includes database integrity checks, foreign-key validation and multi-window FOG episode tracking.
+
+See `benchmark_results.json` and `scripts/run_benchmarks.py` for the recorded results.
+
+**An important distinction:** These results demonstrate numerical behaviour under controlled test conditions. Physical smartphone validation and evaluation using real-world movement recordings remain important next steps.
 
 ---
 
-## 📋 Claims-to-Evidence Classification Table
+## 🛠️ Technology Stack
 
-| Feature / Claim | Status | Verification Evidence |
-|---|---|---|
-| Event-driven DeviceMotion capture | **IMPLEMENTED & AUTOMATED TESTED** | Monotonic timestamps & sequence verified in `test_websocket.py` |
-| 3D Rotation Invariance (No Frequency Doubling) | **IMPLEMENTED & AUTOMATED TESTED** | `test_regressions_master.py:test_3d_rotation_invariance_and_no_frequency_doubling` |
-| Multi-Rate Consistency (40, 50, 60 Hz) | **IMPLEMENTED & AUTOMATED TESTED** | `test_regressions_master.py:test_multi_rate_sampling_consistency` |
-| Multi-Window FOG Episode Tracking | **IMPLEMENTED & AUTOMATED TESTED** | `test_regressions_master.py:test_multi_window_fog_episode_tracking` |
-| Packet Loss & Sequence Deduplication | **IMPLEMENTED & AUTOMATED TESTED** | `test_regressions_master.py:test_exact_packet_loss_and_sequence_edge_cases` |
-| SQLite WAL Mode & Foreign Key Constraints | **IMPLEMENTED & AUTOMATED TESTED** | `test_regressions_master.py:test_foreign_key_enforcement` |
-| Immutable Session Snapshot Persistence | **IMPLEMENTED & AUTOMATED TESTED** | `test_regressions_master.py:test_immutable_snapshot_isolation_on_protocol_reset` |
-| HTML Injection Defense in Clinical Reports | **IMPLEMENTED & AUTOMATED TESTED** | `test_regressions_master.py:test_html_injection_prevention_in_reports` |
-| Hardware Recording Utility Export Bundle | **IMPLEMENTED & AUTOMATED TESTED** | `test_regressions_master.py:test_hardware_recording_export_schema` |
-| Physical Pixel 7 / Samsung S23 Hardware Validation | **BLOCKED** | Requires physical mobile device and reference testbed |
-| Clinical Parkinson's Disease Diagnosis | **NOT CLAIMED / FUTURE WORK** | Investigational prototype only; requires supervised clinical trials |
+| Layer | Technologies |
+|---|---|
+| Frontend | HTML, CSS, JavaScript |
+| Backend | Python, FastAPI |
+| Real-time communication | WebSockets |
+| Signal processing | NumPy, SciPy |
+| Machine learning | Scikit-learn |
+| Database | SQLite, SQLAlchemy |
+| Visualisation | Plotly |
+| Testing | Python unittest |
 
+---
 ---
 
 ## 🚀 Quickstart Guide
