@@ -67,7 +67,7 @@ flowchart LR
                                 |                    |
           +---------------------v-----+         +-----v---------------------+
           |    SQLITE PERSISTENCE     |         |   WORKSTATION DASHBOARD   |
-          |  WAL Mode & FK Enforcement|        |  50Hz Oscilloscope (60fps |
+          |  WAL Mode & FK Enforcement|         | 50Hz Oscilloscope (60fps) |
           |  Immutable Session Saves  |         |  Real PSD Spectrum & STFT |
           |  Authoritative Med Events |         |  Replay Player & Trends   |
           +---------------------------+         +---------------------------+
